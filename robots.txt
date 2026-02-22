@@ -1,0 +1,18 @@
+# Robots.txt for DesignVault
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://design-marketplace.vercel.app/sitemap.xml
+
+# Disallow admin pages (when you add them)
+Disallow: /admin/
+Disallow: /api/
+
+# Allow search engines to crawl CSS and JS
+Allow: /css/
+Allow: /js/
+Allow: /images/
+
+# Crawl-delay (optional - be careful)
+# Crawl-delay: 1
