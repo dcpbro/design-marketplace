@@ -156,6 +156,9 @@ function loadDesigns(filter = 'all') {
                 <img src="${design.image}" alt="${design.title}" loading="lazy">
                 <div class="design-card__overlay">
                     <div class="design-card__actions">
+                    <button class="btn btn--primary" onclick="handlePayment(${design.id}, '${design.title}', ${design.price})">
+                        Buy License
+                    </button>
                         <button class="design-card__action" onclick="toggleLike(${design.id})">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -482,4 +485,53 @@ function toggleLike(designId) {
     }
     
     localStorage.setItem('liked', JSON.stringify(likedDesigns));
+}
+
+// Function to handle the payment
+async function handlePayment(designId, title, price) {
+    console.log("1. Button clicked for design:", designId); // DEBUG
+
+    // Make sure Stripe is loaded
+    if (typeof Stripe === 'undefined') {
+        console.error("ERROR: Stripe library not loaded! Check index.html");
+        return;
+    }
+
+    // REPLACE THIS with your actual pk_test_... key from Stripe
+    const stripe = Stripe('pk_test_PASTE_YOUR_PUBLISHABLE_KEY_HERE');
+    console.log("2. Stripe initialized"); // DEBUG
+
+    try {
+        console.log("3. Sending request to server..."); // DEBUG
+        const response = await fetch('/api/create-checkout-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                designId: designId,
+                title: title,
+                price: price,
+            }),
+        });
+
+        const session = await response.json();
+        console.log("4. Server responded with session ID:", session.id); // DEBUG
+
+        if (session.error) {
+            console.error("Server Error:", session.error);
+            return;
+        }
+
+        console.log("5. Redirecting to Stripe..."); // DEBUG
+        const result = await stripe.redirectToCheckout({
+            sessionId: session.id,
+        });
+
+        if (result.error) {
+            console.error("Stripe Redirect Error:", result.error.message);
+        }
+    } catch (error) {
+        console.error("6. Critical Error in handlePayment:", error);
+    }
 }
