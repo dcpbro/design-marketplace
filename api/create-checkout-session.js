@@ -1,11 +1,12 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       const { title, price, designId } = req.body;
 
-      // Create Checkout Sessions from body params.
       const session = await stripe.checkout.sessions.create({
         line_items: [
           {
@@ -15,19 +16,20 @@ export default async function handler(req, res) {
                 name: title,
                 description: `License for Design #${designId}`,
               },
-              unit_amount: price * 100, // Stripe expects prices in cents
+              unit_amount: Math.round(price * 100), 
             },
             quantity: 1,
           },
         ],
         mode: 'payment',
-        success_url: `${req.headers.origin}/index.html?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${req.headers.origin}/index.html`,
+        success_url: `${req.headers.origin}/index.html?status=success`,
+        cancel_url: `${req.headers.origin}/index.html?status=cancel`,
       });
 
       res.status(200).json({ id: session.id });
     } catch (err) {
-      res.status(err.statusCode || 500).json(err.message);
+      console.error("Stripe Error:", err);
+      res.status(500).json({ error: err.message });
     }
   } else {
     res.setHeader('Allow', 'POST');
